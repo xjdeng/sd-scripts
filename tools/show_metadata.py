@@ -14,7 +14,7 @@ with safe_open(args.model, framework="pt") as f:
     metadata = f.metadata()
 
 if metadata is None:
-    logger.error("No metadata found")
+    print("No metadata found")
 else:
     # metadata is json dict, but not pretty printed
     # sort by key and pretty print

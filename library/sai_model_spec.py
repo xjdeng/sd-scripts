@@ -235,7 +235,7 @@ def build_metadata(
     # # assert all values are filled
     # assert all([v is not None for v in metadata.values()]), metadata
     if not all([v is not None for v in metadata.values()]):
-        logger.error(f"Internal error: some metadata values are None: {metadata}")
+        print(f"Internal error: some metadata values are None: {metadata}")
     
     return metadata
 

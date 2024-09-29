@@ -52,18 +52,18 @@ def cache_to_disk(args: argparse.Namespace) -> None:
     if args.dataset_class is None:
         blueprint_generator = BlueprintGenerator(ConfigSanitizer(True, True, False, True))
         if args.dataset_config is not None:
-            logger.info(f"Load dataset config from {args.dataset_config}")
+            print(f"Load dataset config from {args.dataset_config}")
             user_config = config_util.load_user_config(args.dataset_config)
             ignored = ["train_data_dir", "in_json"]
             if any(getattr(args, attr) is not None for attr in ignored):
-                logger.warning(
+                print(
                     "ignore following options because config file is found: {0} / 設定ファイルが利用されるため以下のオプションは無視されます: {0}".format(
                         ", ".join(ignored)
                     )
                 )
         else:
             if use_dreambooth_method:
-                logger.info("Using DreamBooth method.")
+                print("Using DreamBooth method.")
                 user_config = {
                     "datasets": [
                         {
@@ -74,7 +74,7 @@ def cache_to_disk(args: argparse.Namespace) -> None:
                     ]
                 }
             else:
-                logger.info("Training with captions.")
+                print("Training with captions.")
                 user_config = {
                     "datasets": [
                         {
@@ -99,7 +99,7 @@ def cache_to_disk(args: argparse.Namespace) -> None:
     collator = train_util.collator_class(current_epoch, current_step, ds_for_collator)
 
     # acceleratorを準備する
-    logger.info("prepare accelerator")
+    print("prepare accelerator")
     args.deepspeed = False
     accelerator = train_util.prepare_accelerator(args)
 
@@ -107,7 +107,7 @@ def cache_to_disk(args: argparse.Namespace) -> None:
     weight_dtype, _ = train_util.prepare_dtype(args)
 
     # モデルを読み込む
-    logger.info("load model")
+    print("load model")
     if args.sdxl:
         (_, text_encoder1, text_encoder2, _, _, _, _) = sdxl_train_util.load_target_model(args, accelerator, "sdxl", weight_dtype)
         text_encoders = [text_encoder1, text_encoder2]
@@ -152,7 +152,7 @@ def cache_to_disk(args: argparse.Namespace) -> None:
 
             if args.skip_existing:
                 if os.path.exists(image_info.text_encoder_outputs_npz):
-                    logger.warning(f"Skipping {image_info.text_encoder_outputs_npz} because it already exists.")
+                    print(f"Skipping {image_info.text_encoder_outputs_npz} because it already exists.")
                     continue
                 
             image_info.input_ids1 = input_ids1

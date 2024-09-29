@@ -240,7 +240,7 @@ class OFTNetwork(torch.nn.Module):
         self.dim = dim
         self.alpha = alpha
 
-        logger.info(
+        print(
             f"create OFT network. num blocks: {self.dim}, constraint: {self.alpha}, multiplier: {self.multiplier}, enable_conv: {enable_conv}"
         )
 
@@ -261,7 +261,7 @@ class OFTNetwork(torch.nn.Module):
                         if is_linear or is_conv2d_1x1 or (is_conv2d and enable_conv):
                             oft_name = prefix + "." + name + "." + child_name
                             oft_name = oft_name.replace(".", "_")
-                            # logger.info(oft_name)
+                            # print(oft_name)
 
                             oft = module_class(
                                 oft_name,
@@ -282,7 +282,7 @@ class OFTNetwork(torch.nn.Module):
             target_modules += OFTNetwork.UNET_TARGET_REPLACE_MODULE_CONV2D_3X3
 
         self.unet_ofts: List[OFTModule] = create_modules(unet, target_modules)
-        logger.info(f"create OFT for U-Net: {len(self.unet_ofts)} modules.")
+        print(f"create OFT for U-Net: {len(self.unet_ofts)} modules.")
 
         # assertion
         names = set()
@@ -319,7 +319,7 @@ class OFTNetwork(torch.nn.Module):
 
     # TODO refactor to common function with apply_to
     def merge_to(self, text_encoder, unet, weights_sd, dtype, device):
-        logger.info("enable OFT for U-Net")
+        print("enable OFT for U-Net")
 
         for oft in self.unet_ofts:
             sd_for_lora = {}
@@ -329,7 +329,7 @@ class OFTNetwork(torch.nn.Module):
             oft.load_state_dict(sd_for_lora, False)
             oft.merge_to()
 
-        logger.info(f"weights are merged")
+        print(f"weights are merged")
 
     # 二つのText Encoderに別々の学習率を設定できるようにするといいかも
     def prepare_optimizer_params(self, text_encoder_lr, unet_lr, default_lr):
@@ -341,11 +341,11 @@ class OFTNetwork(torch.nn.Module):
             for oft in ofts:
                 params.extend(oft.parameters())
 
-            # logger.info num of params
+            # print num of params
             num_params = 0
             for p in params:
                 num_params += p.numel()
-            logger.info(f"OFT params: {num_params}")
+            print(f"OFT params: {num_params}")
             return params
 
         param_data = {"params": enumerate_params(self.unet_ofts)}

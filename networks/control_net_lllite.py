@@ -128,7 +128,7 @@ class LLLiteModule(torch.nn.Module):
             return
 
         # timestepごとに呼ばれないので、あらかじめ計算しておく / it is not called for each timestep, so calculate it in advance
-        # logger.info(f"C {self.lllite_name}, cond_image.shape={cond_image.shape}")
+        # print(f"C {self.lllite_name}, cond_image.shape={cond_image.shape}")
         cx = self.conditioning1(cond_image)
         if not self.is_conv2d:
             # reshape / b,c,h,w -> b,h*w,c
@@ -158,7 +158,7 @@ class LLLiteModule(torch.nn.Module):
             cx = cx.repeat(2, 1, 1, 1) if self.is_conv2d else cx.repeat(2, 1, 1)
             if self.use_zeros_for_batch_uncond:
                 cx[0::2] = 0.0  # uncond is zero
-        # logger.info(f"C {self.lllite_name}, x.shape={x.shape}, cx.shape={cx.shape}")
+        # print(f"C {self.lllite_name}, x.shape={x.shape}, cx.shape={cx.shape}")
 
         # downで入力の次元数を削減し、conditioning image embeddingと結合する
         # 加算ではなくchannel方向に結合することで、うまいこと混ぜてくれることを期待している
@@ -289,7 +289,7 @@ class ControlNetLLLite(torch.nn.Module):
 
         # create module instances
         self.unet_modules: List[LLLiteModule] = create_modules(unet, target_modules, LLLiteModule)
-        logger.info(f"create ControlNet LLLite for U-Net: {len(self.unet_modules)} modules.")
+        print(f"create ControlNet LLLite for U-Net: {len(self.unet_modules)} modules.")
 
     def forward(self, x):
         return x  # dummy
@@ -322,7 +322,7 @@ class ControlNetLLLite(torch.nn.Module):
         return info
 
     def apply_to(self):
-        logger.info("applying LLLite for U-Net...")
+        print("applying LLLite for U-Net...")
         for module in self.unet_modules:
             module.apply_to()
             self.add_module(module.lllite_name, module)
@@ -377,19 +377,19 @@ if __name__ == "__main__":
     # sdxl_original_unet.USE_REENTRANT = False
 
     # test shape etc
-    logger.info("create unet")
+    print("create unet")
     unet = sdxl_original_unet.SdxlUNet2DConditionModel()
     unet.to("cuda").to(torch.float16)
 
-    logger.info("create ControlNet-LLLite")
+    print("create ControlNet-LLLite")
     control_net = ControlNetLLLite(unet, 32, 64)
     control_net.apply_to()
     control_net.to("cuda")
 
-    logger.info(control_net)
+    print(control_net)
 
-    # logger.info number of parameters
-    logger.info(f"number of parameters {sum(p.numel() for p in control_net.parameters() if p.requires_grad)}")
+    # print number of parameters
+    print(f"number of parameters {sum(p.numel() for p in control_net.parameters() if p.requires_grad)}")
 
     input()
 
@@ -401,12 +401,12 @@ if __name__ == "__main__":
 
     # # visualize
     # import torchviz
-    # logger.info("run visualize")
+    # print("run visualize")
     # controlnet.set_control(conditioning_image)
     # output = unet(x, t, ctx, y)
-    # logger.info("make_dot")
+    # print("make_dot")
     # image = torchviz.make_dot(output, params=dict(controlnet.named_parameters()))
-    # logger.info("render")
+    # print("render")
     # image.format = "svg" # "png"
     # image.render("NeuralNet") # すごく時間がかかるので注意 / be careful because it takes a long time
     # input()
@@ -417,12 +417,12 @@ if __name__ == "__main__":
 
     scaler = torch.cuda.amp.GradScaler(enabled=True)
 
-    logger.info("start training")
+    print("start training")
     steps = 10
 
     sample_param = [p for p in control_net.named_parameters() if "up" in p[0]][0]
     for step in range(steps):
-        logger.info(f"step {step}")
+        print(f"step {step}")
 
         batch_size = 1
         conditioning_image = torch.rand(batch_size, 3, 1024, 1024).cuda() * 2.0 - 1.0
@@ -442,7 +442,7 @@ if __name__ == "__main__":
         scaler.step(optimizer)
         scaler.update()
         optimizer.zero_grad(set_to_none=True)
-        logger.info(f"{sample_param}")
+        print(f"{sample_param}")
 
     # from safetensors.torch import save_file
 

@@ -82,12 +82,12 @@ CLIP_VISION_MODEL = "laion/CLIP-ViT-bigG-14-laion2B-39B-b160k"
 
 def replace_unet_modules(unet: diffusers.models.unet_2d_condition.UNet2DConditionModel, mem_eff_attn, xformers, sdpa):
     if mem_eff_attn:
-        logger.info("Enable memory efficient attention for U-Net")
+        print("Enable memory efficient attention for U-Net")
 
         # これはDiffusersのU-Netではなく自前のU-Netなので置き換えなくても良い
         unet.set_use_memory_efficient_attention(False, True)
     elif xformers:
-        logger.info("Enable xformers for U-Net")
+        print("Enable xformers for U-Net")
         try:
             import xformers.ops
         except ImportError:
@@ -95,7 +95,7 @@ def replace_unet_modules(unet: diffusers.models.unet_2d_condition.UNet2DConditio
 
         unet.set_use_memory_efficient_attention(True, False)
     elif sdpa:
-        logger.info("Enable SDPA for U-Net")
+        print("Enable SDPA for U-Net")
         unet.set_use_memory_efficient_attention(False, False)
         unet.set_use_sdpa(True)
 
@@ -112,7 +112,7 @@ def replace_vae_modules(vae: diffusers.models.AutoencoderKL, mem_eff_attn, xform
 
 
 def replace_vae_attn_to_memory_efficient():
-    logger.info("VAE Attention.forward has been replaced to FlashAttention (not xformers)")
+    print("VAE Attention.forward has been replaced to FlashAttention (not xformers)")
     flash_func = FlashAttentionFunction
 
     def forward_flash_attn(self, hidden_states, **kwargs):
@@ -168,7 +168,7 @@ def replace_vae_attn_to_memory_efficient():
 
 
 def replace_vae_attn_to_xformers():
-    logger.info("VAE: Attention.forward has been replaced to xformers")
+    print("VAE: Attention.forward has been replaced to xformers")
     import xformers.ops
 
     def forward_xformers(self, hidden_states, **kwargs):
@@ -224,7 +224,7 @@ def replace_vae_attn_to_xformers():
 
 
 def replace_vae_attn_to_sdpa():
-    logger.info("VAE: Attention.forward has been replaced to sdpa")
+    print("VAE: Attention.forward has been replaced to sdpa")
 
     def forward_sdpa(self, hidden_states, **kwargs):
         residual = hidden_states
@@ -360,7 +360,7 @@ class PipelineLike:
         token_replacements = self.token_replacements_list[tokenizer_index]
 
         def replace_tokens(tokens):
-            # logger.info("replace_tokens", tokens, "=>", token_replacements)
+            # print("replace_tokens", tokens, "=>", token_replacements)
             if isinstance(tokens, torch.Tensor):
                 tokens = tokens.tolist()
 
@@ -380,10 +380,10 @@ class PipelineLike:
 
     def set_gradual_latent(self, gradual_latent):
         if gradual_latent is None:
-            logger.info("gradual_latent is disabled")
+            print("gradual_latent is disabled")
             self.gradual_latent = None
         else:
-            logger.info(f"gradual_latent is enabled: {gradual_latent}")
+            print(f"gradual_latent is enabled: {gradual_latent}")
             self.gradual_latent = gradual_latent  # (ds_ratio, start_timesteps, every_n_steps, ratio_step)
 
     @torch.no_grad()
@@ -460,7 +460,7 @@ class PipelineLike:
         do_classifier_free_guidance = guidance_scale > 1.0
 
         if not do_classifier_free_guidance and negative_scale is not None:
-            logger.info(f"negative_scale is ignored if guidance scalle <= 1.0")
+            print(f"negative_scale is ignored if guidance scalle <= 1.0")
             negative_scale = None
 
         # get unconditional embeddings for classifier free guidance
@@ -564,7 +564,7 @@ class PipelineLike:
             text_pool = text_pool[num_sub_prompts - 1 :: num_sub_prompts]  # last subprompt
 
         if init_image is not None and self.clip_vision_model is not None:
-            logger.info(f"encode by clip_vision_model and apply clip_vision_strength={self.clip_vision_strength}")
+            print(f"encode by clip_vision_model and apply clip_vision_strength={self.clip_vision_strength}")
             vision_input = self.clip_vision_processor(init_image, return_tensors="pt", device=self.device)
             pixel_values = vision_input["pixel_values"].to(self.device, dtype=text_embeddings.dtype)
 
@@ -789,8 +789,8 @@ class PipelineLike:
         enable_gradual_latent = False
         if self.gradual_latent:
             if not hasattr(self.scheduler, "set_gradual_latent_params"):
-                logger.info("gradual_latent is not supported for this scheduler. Ignoring.")
-                logger.info(f'{self.scheduler.__class__.__name__}')
+                print("gradual_latent is not supported for this scheduler. Ignoring.")
+                print(f'{self.scheduler.__class__.__name__}')
             else:
                 enable_gradual_latent = True
                 step_elapsed = 1000
@@ -839,7 +839,7 @@ class PipelineLike:
                     if not enabled or ratio >= 1.0:
                         continue
                     if ratio < i / len(timesteps):
-                        logger.info(f"ControlNet {j} is disabled (ratio={ratio} at {i} / {len(timesteps)})")
+                        print(f"ControlNet {j} is disabled (ratio={ratio} at {i} / {len(timesteps)})")
                         control_net.set_cond_image(None)
                         each_control_net_enabled[j] = False
 
@@ -1059,7 +1059,7 @@ def get_prompts_with_weights(tokenizer: CLIPTokenizer, token_replacer, prompt: L
             if word.strip() == "BREAK":
                 # pad until next multiple of tokenizer's max token length
                 pad_len = tokenizer.model_max_length - (len(text_token) % tokenizer.model_max_length)
-                logger.info(f"BREAK pad_len: {pad_len}")
+                print(f"BREAK pad_len: {pad_len}")
                 for i in range(pad_len):
                     # v2のときEOSをつけるべきかどうかわからないぜ
                     # if i == 0:
@@ -1089,7 +1089,7 @@ def get_prompts_with_weights(tokenizer: CLIPTokenizer, token_replacer, prompt: L
         tokens.append(text_token)
         weights.append(text_weight)
     if truncated:
-        logger.warning("warning: Prompt was truncated. Try to shorten the prompt or increase max_embeddings_multiples")
+        print("warning: Prompt was truncated. Try to shorten the prompt or increase max_embeddings_multiples")
     return tokens, weights
 
 
@@ -1362,7 +1362,7 @@ def handle_dynamic_prompt_variants(prompt, repeat_count):
             elif len(count_range) == 2:
                 count_range = [int(count_range[0]), int(count_range[1])]
             else:
-                logger.warning(f"invalid count range: {count_range}")
+                print(f"invalid count range: {count_range}")
                 count_range = [1, 1]
             if count_range[0] > count_range[1]:
                 count_range = [count_range[1], count_range[0]]
@@ -1431,7 +1431,7 @@ def handle_dynamic_prompt_variants(prompt, repeat_count):
 # endregion
 
 # def load_clip_l14_336(dtype):
-#   logger.info(f"loading CLIP: {CLIP_ID_L14_336}")
+#   print(f"loading CLIP: {CLIP_ID_L14_336}")
 #   text_encoder = CLIPTextModel.from_pretrained(CLIP_ID_L14_336, torch_dtype=dtype)
 #   return text_encoder
 
@@ -1502,7 +1502,7 @@ def main(args):
         replace_vae_modules(vae, mem_eff, args.xformers, args.sdpa)
 
     # tokenizerを読み込む
-    logger.info("loading tokenizer")
+    print("loading tokenizer")
     tokenizer1, tokenizer2 = sdxl_train_util.load_tokenizers(args)
 
     # schedulerを用意する
@@ -1576,7 +1576,7 @@ def main(args):
             self.sampler_noises = noises
 
         def randn(self, shape, device=None, dtype=None, layout=None, generator=None):
-            # logger.info("replacing", shape, len(self.sampler_noises), self.sampler_noise_index)
+            # print("replacing", shape, len(self.sampler_noises), self.sampler_noise_index)
             if self.sampler_noises is not None and self.sampler_noise_index < len(self.sampler_noises):
                 noise = self.sampler_noises[self.sampler_noise_index]
                 if shape != noise.shape:
@@ -1585,7 +1585,7 @@ def main(args):
                 noise = None
 
             if noise == None:
-                logger.warning(f"unexpected noise request: {self.sampler_noise_index}, {shape}")
+                print(f"unexpected noise request: {self.sampler_noise_index}, {shape}")
                 noise = torch.randn(shape, dtype=dtype, device=device, generator=generator)
 
             self.sampler_noise_index += 1
@@ -1617,7 +1617,7 @@ def main(args):
     # ↓以下は結局PipeでFalseに設定されるので意味がなかった
     # # clip_sample=Trueにする
     # if hasattr(scheduler.config, "clip_sample") and scheduler.config.clip_sample is False:
-    #     logger.info("set clip_sample to True")
+    #     print("set clip_sample to True")
     #     scheduler.config.clip_sample = True
 
     # deviceを決定する
@@ -1646,7 +1646,7 @@ def main(args):
 
     vae_dtype = dtype
     if args.no_half_vae:
-        logger.info("set vae_dtype to float32")
+        print("set vae_dtype to float32")
         vae_dtype = torch.float32
     vae.to(vae_dtype).to(device)
     vae.eval()
@@ -1671,10 +1671,10 @@ def main(args):
             network_merge = args.network_merge_n_models
         else:
             network_merge = 0
-        logger.info(f"network_merge: {network_merge}")
+        print(f"network_merge: {network_merge}")
 
         for i, network_module in enumerate(args.network_module):
-            logger.info(f"import network module: {network_module}")
+            print(f"import network module: {network_module}")
             imported_module = importlib.import_module(network_module)
 
             network_mul = 1.0 if args.network_mul is None or len(args.network_mul) <= i else args.network_mul[i]
@@ -1692,7 +1692,7 @@ def main(args):
                 raise ValueError("No weight. Weight is required.")
 
             network_weight = args.network_weights[i]
-            logger.info(f"load network weights from: {network_weight}")
+            print(f"load network weights from: {network_weight}")
 
             if model_util.is_safetensors(network_weight) and args.network_show_meta:
                 from safetensors.torch import safe_open
@@ -1700,7 +1700,7 @@ def main(args):
                 with safe_open(network_weight, framework="pt") as f:
                     metadata = f.metadata()
                 if metadata is not None:
-                    logger.info(f"metadata for: {network_weight}: {metadata}")
+                    print(f"metadata for: {network_weight}: {metadata}")
 
             network, weights_sd = imported_module.create_network_from_weights(
                 network_mul, network_weight, vae, [text_encoder1, text_encoder2], unet, for_inference=True, **net_kwargs
@@ -1710,20 +1710,20 @@ def main(args):
 
             mergeable = network.is_mergeable()
             if network_merge and not mergeable:
-                logger.warning("network is not mergiable. ignore merge option.")
+                print("network is not mergiable. ignore merge option.")
 
             if not mergeable or i >= network_merge:
                 # not merging
                 network.apply_to([text_encoder1, text_encoder2], unet)
                 info = network.load_state_dict(weights_sd, False)  # network.load_weightsを使うようにするとよい
-                logger.info(f"weights are loaded: {info}")
+                print(f"weights are loaded: {info}")
 
                 if args.opt_channels_last:
                     network.to(memory_format=torch.channels_last)
                 network.to(dtype).to(device)
 
                 if network_pre_calc:
-                    logger.info("backup original weights")
+                    print("backup original weights")
                     network.backup_weights()
 
                 networks.append(network)
@@ -1737,7 +1737,7 @@ def main(args):
     # upscalerの指定があれば取得する
     upscaler = None
     if args.highres_fix_upscaler:
-        logger.info(f"import upscaler module: {args.highres_fix_upscaler}")
+        print(f"import upscaler module: {args.highres_fix_upscaler}")
         imported_module = importlib.import_module(args.highres_fix_upscaler)
 
         us_kwargs = {}
@@ -1746,7 +1746,7 @@ def main(args):
                 key, value = net_arg.split("=")
                 us_kwargs[key] = value
 
-        logger.info("create upscaler")
+        print("create upscaler")
         upscaler = imported_module.create_upscaler(**us_kwargs)
         upscaler.to(dtype).to(device)
 
@@ -1763,7 +1763,7 @@ def main(args):
     #         control_nets.append(ControlNetInfo(ctrl_unet, ctrl_net, prep, weight, ratio))
     if args.control_net_lllite_models:
         for i, model_file in enumerate(args.control_net_lllite_models):
-            logger.info(f"loading ControlNet-LLLite: {model_file}")
+            print(f"loading ControlNet-LLLite: {model_file}")
 
             from safetensors.torch import load_file
 
@@ -1794,7 +1794,7 @@ def main(args):
             control_nets.append((control_net, ratio))
 
     if args.opt_channels_last:
-        logger.info(f"set optimizing: channels last")
+        print(f"set optimizing: channels last")
         text_encoder1.to(memory_format=torch.channels_last)
         text_encoder2.to(memory_format=torch.channels_last)
         vae.to(memory_format=torch.channels_last)
@@ -1818,7 +1818,7 @@ def main(args):
         args.clip_skip,
     )
     pipe.set_control_nets(control_nets)
-    logger.info("pipeline is ready.")
+    print("pipeline is ready.")
 
     if args.diffusers_xformers:
         pipe.enable_xformers_memory_efficient_attention()
@@ -1883,7 +1883,7 @@ def main(args):
 
             token_ids1 = tokenizer1.convert_tokens_to_ids(token_strings)
             token_ids2 = tokenizer2.convert_tokens_to_ids(token_strings)
-            logger.info(f"Textual Inversion embeddings `{token_string}` loaded. Tokens are added: {token_ids1} and {token_ids2}")
+            print(f"Textual Inversion embeddings `{token_string}` loaded. Tokens are added: {token_ids1} and {token_ids2}")
             assert (
                 min(token_ids1) == token_ids1[0] and token_ids1[-1] == token_ids1[0] + len(token_ids1) - 1
             ), f"token ids1 is not ordered"
@@ -1913,7 +1913,7 @@ def main(args):
 
     # promptを取得する
     if args.from_file is not None:
-        logger.info(f"reading prompts from {args.from_file}")
+        print(f"reading prompts from {args.from_file}")
         with open(args.from_file, "r", encoding="utf-8") as f:
             prompt_list = f.read().splitlines()
             prompt_list = [d for d in prompt_list if len(d.strip()) > 0 and d[0] != "#"]
@@ -1942,7 +1942,7 @@ def main(args):
         for p in paths:
             image = Image.open(p)
             if image.mode != "RGB":
-                logger.info(f"convert image to RGB from {image.mode}: {p}")
+                print(f"convert image to RGB from {image.mode}: {p}")
                 image = image.convert("RGB")
             images.append(image)
 
@@ -1958,14 +1958,14 @@ def main(args):
         return resized
 
     if args.image_path is not None:
-        logger.info(f"load image for img2img: {args.image_path}")
+        print(f"load image for img2img: {args.image_path}")
         init_images = load_images(args.image_path)
         assert len(init_images) > 0, f"No image / 画像がありません: {args.image_path}"
-        logger.info(f"loaded {len(init_images)} images for img2img")
+        print(f"loaded {len(init_images)} images for img2img")
 
         # CLIP Vision
         if args.clip_vision_strength is not None:
-            logger.info(f"load CLIP Vision model: {CLIP_VISION_MODEL}")
+            print(f"load CLIP Vision model: {CLIP_VISION_MODEL}")
             vision_model = CLIPVisionModelWithProjection.from_pretrained(CLIP_VISION_MODEL, projection_dim=1280)
             vision_model.to(device, dtype)
             processor = CLIPImageProcessor.from_pretrained(CLIP_VISION_MODEL)
@@ -1973,22 +1973,22 @@ def main(args):
             pipe.clip_vision_model = vision_model
             pipe.clip_vision_processor = processor
             pipe.clip_vision_strength = args.clip_vision_strength
-            logger.info(f"CLIP Vision model loaded.")
+            print(f"CLIP Vision model loaded.")
 
     else:
         init_images = None
 
     if args.mask_path is not None:
-        logger.info(f"load mask for inpainting: {args.mask_path}")
+        print(f"load mask for inpainting: {args.mask_path}")
         mask_images = load_images(args.mask_path)
         assert len(mask_images) > 0, f"No mask image / マスク画像がありません: {args.image_path}"
-        logger.info(f"loaded {len(mask_images)} mask images for inpainting")
+        print(f"loaded {len(mask_images)} mask images for inpainting")
     else:
         mask_images = None
 
     # promptがないとき、画像のPngInfoから取得する
     if init_images is not None and len(prompt_list) == 0 and not args.interactive:
-        logger.info("get prompts from images' metadata")
+        print("get prompts from images' metadata")
         for img in init_images:
             if "prompt" in img.text:
                 prompt = img.text["prompt"]
@@ -2017,17 +2017,17 @@ def main(args):
             h = int(h * args.highres_fix_scale + 0.5)
 
         if init_images is not None:
-            logger.info(f"resize img2img source images to {w}*{h}")
+            print(f"resize img2img source images to {w}*{h}")
             init_images = resize_images(init_images, (w, h))
         if mask_images is not None:
-            logger.info(f"resize img2img mask images to {w}*{h}")
+            print(f"resize img2img mask images to {w}*{h}")
             mask_images = resize_images(mask_images, (w, h))
 
     regional_network = False
     if networks and mask_images:
         # mask を領域情報として流用する、現在は一回のコマンド呼び出しで1枚だけ対応
         regional_network = True
-        logger.info("use mask as region")
+        print("use mask as region")
 
         size = None
         for i, network in enumerate(networks):
@@ -2052,14 +2052,14 @@ def main(args):
 
     prev_image = None  # for VGG16 guided
     if args.guide_image_path is not None:
-        logger.info(f"load image for ControlNet guidance: {args.guide_image_path}")
+        print(f"load image for ControlNet guidance: {args.guide_image_path}")
         guide_images = []
         for p in args.guide_image_path:
             guide_images.extend(load_images(p))
 
-        logger.info(f"loaded {len(guide_images)} guide images for guidance")
+        print(f"loaded {len(guide_images)} guide images for guidance")
         if len(guide_images) == 0:
-            logger.warning(
+            print(
                 f"No guide image, use previous generated image. / ガイド画像がありません。直前に生成した画像を使います: {args.image_path}"
             )
             guide_images = None
@@ -2087,7 +2087,7 @@ def main(args):
     max_embeddings_multiples = 1 if args.max_embeddings_multiples is None else args.max_embeddings_multiples
 
     for gen_iter in range(args.n_iter):
-        logger.info(f"iteration {gen_iter+1}/{args.n_iter}")
+        print(f"iteration {gen_iter+1}/{args.n_iter}")
         iter_seed = random.randint(0, 0x7FFFFFFF)
 
         # バッチ処理の関数
@@ -2099,7 +2099,7 @@ def main(args):
                 # 1st stageのバッチを作成して呼び出す：サイズを小さくして呼び出す
                 is_1st_latent = upscaler.support_latents() if upscaler else args.highres_fix_latents_upscaling
 
-                logger.info("process 1st stage")
+                print("process 1st stage")
                 batch_1st = []
                 for _, base, ext in batch:
 
@@ -2144,7 +2144,7 @@ def main(args):
                 images_1st = process_batch(batch_1st, True, True)
 
                 # 2nd stageのバッチを作成して以下処理する
-                logger.info("process 2nd stage")
+                print("process 2nd stage")
                 width_2nd, height_2nd = batch[0].ext.width, batch[0].ext.height
 
                 if upscaler:
@@ -2316,7 +2316,7 @@ def main(args):
                         n.restore_weights()
                     for n in networks:
                         n.pre_calculation()
-                    logger.info("pre-calculation... done")
+                    print("pre-calculation... done")
 
             images = pipe(
                 prompts,
@@ -2397,7 +2397,7 @@ def main(args):
                         cv2.waitKey()
                         cv2.destroyAllWindows()
                 except ImportError:
-                    logger.error(
+                    print(
                         "opencv-python is not installed, cannot preview / opencv-pythonがインストールされていないためプレビューできません"
                     )
 
@@ -2412,8 +2412,8 @@ def main(args):
                 # interactive
                 valid = False
                 while not valid:
-                    logger.info("")
-                    logger.info("Type prompt:")
+                    print("")
+                    print("Type prompt:")
                     try:
                         raw_prompt = input()
                     except EOFError:
@@ -2470,74 +2470,74 @@ def main(args):
 
                     prompt_args = raw_prompt.strip().split(" --")
                     prompt = prompt_args[0]
-                    logger.info(f"prompt {prompt_index+1}/{len(prompt_list)}: {prompt}")
+                    print(f"prompt {prompt_index+1}/{len(prompt_list)}: {prompt}")
 
                     for parg in prompt_args[1:]:
                         try:
                             m = re.match(r"w (\d+)", parg, re.IGNORECASE)
                             if m:
                                 width = int(m.group(1))
-                                logger.info(f"width: {width}")
+                                print(f"width: {width}")
                                 continue
 
                             m = re.match(r"h (\d+)", parg, re.IGNORECASE)
                             if m:
                                 height = int(m.group(1))
-                                logger.info(f"height: {height}")
+                                print(f"height: {height}")
                                 continue
 
                             m = re.match(r"ow (\d+)", parg, re.IGNORECASE)
                             if m:
                                 original_width = int(m.group(1))
-                                logger.info(f"original width: {original_width}")
+                                print(f"original width: {original_width}")
                                 continue
 
                             m = re.match(r"oh (\d+)", parg, re.IGNORECASE)
                             if m:
                                 original_height = int(m.group(1))
-                                logger.info(f"original height: {original_height}")
+                                print(f"original height: {original_height}")
                                 continue
 
                             m = re.match(r"nw (\d+)", parg, re.IGNORECASE)
                             if m:
                                 original_width_negative = int(m.group(1))
-                                logger.info(f"original width negative: {original_width_negative}")
+                                print(f"original width negative: {original_width_negative}")
                                 continue
 
                             m = re.match(r"nh (\d+)", parg, re.IGNORECASE)
                             if m:
                                 original_height_negative = int(m.group(1))
-                                logger.info(f"original height negative: {original_height_negative}")
+                                print(f"original height negative: {original_height_negative}")
                                 continue
 
                             m = re.match(r"ct (\d+)", parg, re.IGNORECASE)
                             if m:
                                 crop_top = int(m.group(1))
-                                logger.info(f"crop top: {crop_top}")
+                                print(f"crop top: {crop_top}")
                                 continue
 
                             m = re.match(r"cl (\d+)", parg, re.IGNORECASE)
                             if m:
                                 crop_left = int(m.group(1))
-                                logger.info(f"crop left: {crop_left}")
+                                print(f"crop left: {crop_left}")
                                 continue
 
                             m = re.match(r"s (\d+)", parg, re.IGNORECASE)
                             if m:  # steps
                                 steps = max(1, min(1000, int(m.group(1))))
-                                logger.info(f"steps: {steps}")
+                                print(f"steps: {steps}")
                                 continue
 
                             m = re.match(r"d ([\d,]+)", parg, re.IGNORECASE)
                             if m:  # seed
                                 seeds = [int(d) for d in m.group(1).split(",")]
-                                logger.info(f"seeds: {seeds}")
+                                print(f"seeds: {seeds}")
                                 continue
 
                             m = re.match(r"l ([\d\.]+)", parg, re.IGNORECASE)
                             if m:  # scale
                                 scale = float(m.group(1))
-                                logger.info(f"scale: {scale}")
+                                print(f"scale: {scale}")
                                 continue
 
                             m = re.match(r"nl ([\d\.]+|none|None)", parg, re.IGNORECASE)
@@ -2546,25 +2546,25 @@ def main(args):
                                     negative_scale = None
                                 else:
                                     negative_scale = float(m.group(1))
-                                logger.info(f"negative scale: {negative_scale}")
+                                print(f"negative scale: {negative_scale}")
                                 continue
 
                             m = re.match(r"t ([\d\.]+)", parg, re.IGNORECASE)
                             if m:  # strength
                                 strength = float(m.group(1))
-                                logger.info(f"strength: {strength}")
+                                print(f"strength: {strength}")
                                 continue
 
                             m = re.match(r"n (.+)", parg, re.IGNORECASE)
                             if m:  # negative prompt
                                 negative_prompt = m.group(1)
-                                logger.info(f"negative prompt: {negative_prompt}")
+                                print(f"negative prompt: {negative_prompt}")
                                 continue
 
                             m = re.match(r"c (.+)", parg, re.IGNORECASE)
                             if m:  # clip prompt
                                 clip_prompt = m.group(1)
-                                logger.info(f"clip prompt: {clip_prompt}")
+                                print(f"clip prompt: {clip_prompt}")
                                 continue
 
                             m = re.match(r"am ([\d\.\-,]+)", parg, re.IGNORECASE)
@@ -2572,131 +2572,131 @@ def main(args):
                                 network_muls = [float(v) for v in m.group(1).split(",")]
                                 while len(network_muls) < len(networks):
                                     network_muls.append(network_muls[-1])
-                                logger.info(f"network mul: {network_muls}")
+                                print(f"network mul: {network_muls}")
                                 continue
 
                             # Deep Shrink
                             m = re.match(r"dsd1 ([\d\.]+)", parg, re.IGNORECASE)
                             if m:  # deep shrink depth 1
                                 ds_depth_1 = int(m.group(1))
-                                logger.info(f"deep shrink depth 1: {ds_depth_1}")
+                                print(f"deep shrink depth 1: {ds_depth_1}")
                                 continue
 
                             m = re.match(r"dst1 ([\d\.]+)", parg, re.IGNORECASE)
                             if m:  # deep shrink timesteps 1
                                 ds_timesteps_1 = int(m.group(1))
                                 ds_depth_1 = ds_depth_1 if ds_depth_1 is not None else -1  # -1 means override
-                                logger.info(f"deep shrink timesteps 1: {ds_timesteps_1}")
+                                print(f"deep shrink timesteps 1: {ds_timesteps_1}")
                                 continue
 
                             m = re.match(r"dsd2 ([\d\.]+)", parg, re.IGNORECASE)
                             if m:  # deep shrink depth 2
                                 ds_depth_2 = int(m.group(1))
                                 ds_depth_1 = ds_depth_1 if ds_depth_1 is not None else -1  # -1 means override
-                                logger.info(f"deep shrink depth 2: {ds_depth_2}")
+                                print(f"deep shrink depth 2: {ds_depth_2}")
                                 continue
 
                             m = re.match(r"dst2 ([\d\.]+)", parg, re.IGNORECASE)
                             if m:  # deep shrink timesteps 2
                                 ds_timesteps_2 = int(m.group(1))
                                 ds_depth_1 = ds_depth_1 if ds_depth_1 is not None else -1  # -1 means override
-                                logger.info(f"deep shrink timesteps 2: {ds_timesteps_2}")
+                                print(f"deep shrink timesteps 2: {ds_timesteps_2}")
                                 continue
 
                             m = re.match(r"dsr ([\d\.]+)", parg, re.IGNORECASE)
                             if m:  # deep shrink ratio
                                 ds_ratio = float(m.group(1))
                                 ds_depth_1 = ds_depth_1 if ds_depth_1 is not None else -1  # -1 means override
-                                logger.info(f"deep shrink ratio: {ds_ratio}")
+                                print(f"deep shrink ratio: {ds_ratio}")
                                 continue
 
                             # Gradual Latent
                             m = re.match(r"glt ([\d\.]+)", parg, re.IGNORECASE)
                             if m:  # gradual latent timesteps
                                 gl_timesteps = int(m.group(1))
-                                logger.info(f"gradual latent timesteps: {gl_timesteps}")
+                                print(f"gradual latent timesteps: {gl_timesteps}")
                                 continue
 
                             m = re.match(r"glr ([\d\.]+)", parg, re.IGNORECASE)
                             if m:  # gradual latent ratio
                                 gl_ratio = float(m.group(1))
                                 gl_timesteps = gl_timesteps if gl_timesteps is not None else -1  # -1 means override
-                                logger.info(f"gradual latent ratio: {ds_ratio}")
+                                print(f"gradual latent ratio: {ds_ratio}")
                                 continue
 
                             m = re.match(r"gle ([\d\.]+)", parg, re.IGNORECASE)
                             if m:  # gradual latent every n steps
                                 gl_every_n_steps = int(m.group(1))
                                 gl_timesteps = gl_timesteps if gl_timesteps is not None else -1  # -1 means override
-                                logger.info(f"gradual latent every n steps: {gl_every_n_steps}")
+                                print(f"gradual latent every n steps: {gl_every_n_steps}")
                                 continue
 
                             m = re.match(r"gls ([\d\.]+)", parg, re.IGNORECASE)
                             if m:  # gradual latent ratio step
                                 gl_ratio_step = float(m.group(1))
                                 gl_timesteps = gl_timesteps if gl_timesteps is not None else -1  # -1 means override
-                                logger.info(f"gradual latent ratio step: {gl_ratio_step}")
+                                print(f"gradual latent ratio step: {gl_ratio_step}")
                                 continue
 
                             m = re.match(r"glsn ([\d\.]+)", parg, re.IGNORECASE)
                             if m:  # gradual latent s noise
                                 gl_s_noise = float(m.group(1))
                                 gl_timesteps = gl_timesteps if gl_timesteps is not None else -1  # -1 means override
-                                logger.info(f"gradual latent s noise: {gl_s_noise}")
+                                print(f"gradual latent s noise: {gl_s_noise}")
                                 continue
 
                             m = re.match(r"glus ([\d\.\-,]+)", parg, re.IGNORECASE)
                             if m:  # gradual latent unsharp params
                                 gl_unsharp_params = m.group(1)
                                 gl_timesteps = gl_timesteps if gl_timesteps is not None else -1  # -1 means override
-                                logger.info(f"gradual latent unsharp params: {gl_unsharp_params}")
+                                print(f"gradual latent unsharp params: {gl_unsharp_params}")
                                 continue
 
                             # Gradual Latent
                             m = re.match(r"glt ([\d\.]+)", parg, re.IGNORECASE)
                             if m:  # gradual latent timesteps
                                 gl_timesteps = int(m.group(1))
-                                logger.info(f"gradual latent timesteps: {gl_timesteps}")
+                                print(f"gradual latent timesteps: {gl_timesteps}")
                                 continue
 
                             m = re.match(r"glr ([\d\.]+)", parg, re.IGNORECASE)
                             if m:  # gradual latent ratio
                                 gl_ratio = float(m.group(1))
                                 gl_timesteps = gl_timesteps if gl_timesteps is not None else -1  # -1 means override
-                                logger.info(f"gradual latent ratio: {ds_ratio}")
+                                print(f"gradual latent ratio: {ds_ratio}")
                                 continue
 
                             m = re.match(r"gle ([\d\.]+)", parg, re.IGNORECASE)
                             if m:  # gradual latent every n steps
                                 gl_every_n_steps = int(m.group(1))
                                 gl_timesteps = gl_timesteps if gl_timesteps is not None else -1  # -1 means override
-                                logger.info(f"gradual latent every n steps: {gl_every_n_steps}")
+                                print(f"gradual latent every n steps: {gl_every_n_steps}")
                                 continue
 
                             m = re.match(r"gls ([\d\.]+)", parg, re.IGNORECASE)
                             if m:  # gradual latent ratio step
                                 gl_ratio_step = float(m.group(1))
                                 gl_timesteps = gl_timesteps if gl_timesteps is not None else -1  # -1 means override
-                                logger.info(f"gradual latent ratio step: {gl_ratio_step}")
+                                print(f"gradual latent ratio step: {gl_ratio_step}")
                                 continue
 
                             m = re.match(r"glsn ([\d\.]+)", parg, re.IGNORECASE)
                             if m:  # gradual latent s noise
                                 gl_s_noise = float(m.group(1))
                                 gl_timesteps = gl_timesteps if gl_timesteps is not None else -1  # -1 means override
-                                logger.info(f"gradual latent s noise: {gl_s_noise}")
+                                print(f"gradual latent s noise: {gl_s_noise}")
                                 continue
 
                             m = re.match(r"glus ([\d\.\-,]+)", parg, re.IGNORECASE)
                             if m:  # gradual latent unsharp params
                                 gl_unsharp_params = m.group(1)
                                 gl_timesteps = gl_timesteps if gl_timesteps is not None else -1  # -1 means override
-                                logger.info(f"gradual latent unsharp params: {gl_unsharp_params}")
+                                print(f"gradual latent unsharp params: {gl_unsharp_params}")
                                 continue
 
                         except ValueError as ex:
-                            logger.error(f"Exception in parsing / 解析エラー: {parg}")
-                            logger.error(f"{ex}")
+                            print(f"Exception in parsing / 解析エラー: {parg}")
+                            print(f"{ex}")
 
                 # override Deep Shrink
                 if ds_depth_1 is not None:
@@ -2738,7 +2738,7 @@ def main(args):
                         if len(predefined_seeds) > 0:
                             seed = predefined_seeds.pop(0)
                         else:
-                            logger.error("predefined seeds are exhausted")
+                            print("predefined seeds are exhausted")
                             seed = None
                     elif args.iter_same_seed:
                         seeds = iter_seed
@@ -2748,7 +2748,7 @@ def main(args):
                 if seed is None:
                     seed = random.randint(0, 0x7FFFFFFF)
                 if args.interactive:
-                    logger.info(f"seed: {seed}")
+                    print(f"seed: {seed}")
 
                 # prepare init image, guide image and mask
                 init_image = mask_image = guide_image = None
@@ -2764,7 +2764,7 @@ def main(args):
                         width = width - width % 32
                         height = height - height % 32
                         if width != init_image.size[0] or height != init_image.size[1]:
-                            logger.warning(
+                            print(
                                 f"img2img image size is not divisible by 32 so aspect ratio is changed / img2imgの画像サイズが32で割り切れないためリサイズされます。画像が歪みます"
                             )
 
@@ -2826,7 +2826,7 @@ def main(args):
             process_batch(batch_data, highres_fix)
             batch_data.clear()
 
-    logger.info("done!")
+    print("done!")
 
 
 def setup_parser() -> argparse.ArgumentParser:

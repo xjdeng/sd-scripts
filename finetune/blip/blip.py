@@ -240,6 +240,6 @@ def load_checkpoint(model,url_or_filename):
                 del state_dict[key]
     
     msg = model.load_state_dict(state_dict,strict=False)
-    logger.info('load checkpoint from %s'%url_or_filename)  
+    print('load checkpoint from %s'%url_or_filename)  
     return model,msg
     

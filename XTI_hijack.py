@@ -43,7 +43,7 @@ def unet_forward_XTI(
     upsample_size = None
 
     if any(s % default_overall_up_factor != 0 for s in sample.shape[-2:]):
-        # logger.info("Forward upsample size to force interpolation output size.")
+        # print("Forward upsample size to force interpolation output size.")
         forward_upsample_size = True
 
     # 1. time

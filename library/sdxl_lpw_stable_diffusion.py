@@ -181,7 +181,7 @@ def get_prompts_with_weights(pipe: StableDiffusionPipeline, prompt: List[str], m
         tokens.append(text_token)
         weights.append(text_weight)
     if truncated:
-        logger.warning("Prompt was truncated. Try to shorten the prompt or increase max_embeddings_multiples")
+        print("Prompt was truncated. Try to shorten the prompt or increase max_embeddings_multiples")
     return tokens, weights
 
 

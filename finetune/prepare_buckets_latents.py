@@ -59,22 +59,22 @@ def get_npz_filename(data_dir, image_key, is_full_path, recursive):
 def main(args):
     # assert args.bucket_reso_steps % 8 == 0, f"bucket_reso_steps must be divisible by 8 / bucket_reso_stepは8で割り切れる必要があります"
     if args.bucket_reso_steps % 8 > 0:
-        logger.warning(f"resolution of buckets in training time is a multiple of 8 / 学習時の各bucketの解像度は8単位になります")
+        print(f"resolution of buckets in training time is a multiple of 8 / 学習時の各bucketの解像度は8単位になります")
     if args.bucket_reso_steps % 32 > 0:
-        logger.warning(
+        print(
             f"WARNING: bucket_reso_steps is not divisible by 32. It is not working with SDXL / bucket_reso_stepsが32で割り切れません。SDXLでは動作しません"
         )
 
     train_data_dir_path = Path(args.train_data_dir)
     image_paths: List[str] = [str(p) for p in train_util.glob_images_pathlib(train_data_dir_path, args.recursive)]
-    logger.info(f"found {len(image_paths)} images.")
+    print(f"found {len(image_paths)} images.")
 
     if os.path.exists(args.in_json):
-        logger.info(f"loading existing metadata: {args.in_json}")
+        print(f"loading existing metadata: {args.in_json}")
         with open(args.in_json, "rt", encoding="utf-8") as f:
             metadata = json.load(f)
     else:
-        logger.error(f"no metadata / メタデータファイルがありません: {args.in_json}")
+        print(f"no metadata / メタデータファイルがありません: {args.in_json}")
         return
 
     weight_dtype = torch.float32
@@ -97,7 +97,7 @@ def main(args):
     if not args.bucket_no_upscale:
         bucket_manager.make_buckets()
     else:
-        logger.warning(
+        print(
             "min_bucket_reso and max_bucket_reso are ignored if bucket_no_upscale is set, because bucket reso is defined by image size automatically / bucket_no_upscaleが指定された場合は、bucketの解像度は画像サイズから自動計算されるため、min_bucket_resoとmax_bucket_resoは無視されます"
         )
 
@@ -138,7 +138,7 @@ def main(args):
                 if image.mode != "RGB":
                     image = image.convert("RGB")
             except Exception as e:
-                logger.error(f"Could not load image path / 画像を読み込めません: {image_path}, error: {e}")
+                print(f"Could not load image path / 画像を読み込めません: {image_path}, error: {e}")
                 continue
 
         image_key = image_path if args.full_path else os.path.splitext(os.path.basename(image_path))[0]
@@ -191,15 +191,15 @@ def main(args):
     for i, reso in enumerate(bucket_manager.resos):
         count = bucket_counts.get(reso, 0)
         if count > 0:
-            logger.info(f"bucket {i} {reso}: {count}")
+            print(f"bucket {i} {reso}: {count}")
     img_ar_errors = np.array(img_ar_errors)
-    logger.info(f"mean ar error: {np.mean(img_ar_errors)}")
+    print(f"mean ar error: {np.mean(img_ar_errors)}")
 
     # metadataを書き出して終わり
-    logger.info(f"writing metadata: {args.out_json}")
+    print(f"writing metadata: {args.out_json}")
     with open(args.out_json, "wt", encoding="utf-8") as f:
         json.dump(metadata, f, indent=2)
-    logger.info("done!")
+    print("done!")
 
 
 def setup_parser() -> argparse.ArgumentParser:

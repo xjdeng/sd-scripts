@@ -76,7 +76,7 @@ def setup_logging(args=None, log_level=None, reset=False):
 
     if msg_init is not None:
         logger = logging.getLogger(__name__)
-        logger.info(msg_init)
+        print(msg_init)
 
 
 
@@ -193,7 +193,7 @@ class EulerAncestralDiscreteSchedulerGL(EulerAncestralDiscreteScheduler):
             )
 
         if not self.is_scale_input_called:
-            # logger.warning(
+            # print(
             print(
                 "The `scale_model_input` function should be called before `step` to ensure correct denoising. "
                 "See `StableDiffusionPipeline` for a usage example."

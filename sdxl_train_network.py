@@ -62,7 +62,7 @@ class SdxlNetworkTrainer(train_network.NetworkTrainer):
         if args.cache_text_encoder_outputs:
             if not args.lowram:
                 # メモリ消費を減らす
-                logger.info("move vae and unet to cpu to save memory")
+                print("move vae and unet to cpu to save memory")
                 org_vae_device = vae.device
                 org_unet_device = unet.device
                 vae.to("cpu")
@@ -85,7 +85,7 @@ class SdxlNetworkTrainer(train_network.NetworkTrainer):
             clean_memory_on_device(accelerator.device)
 
             if not args.lowram:
-                logger.info("move vae and unet back to original device")
+                print("move vae and unet back to original device")
                 vae.to(org_vae_device)
                 unet.to(org_unet_device)
         else:
@@ -143,7 +143,7 @@ class SdxlNetworkTrainer(train_network.NetworkTrainer):
             # assert ((encoder_hidden_states1.to("cpu") - ehs1.to(dtype=weight_dtype)).abs().max() > 1e-2).sum() <= b_size * 2
             # assert ((encoder_hidden_states2.to("cpu") - ehs2.to(dtype=weight_dtype)).abs().max() > 1e-2).sum() <= b_size * 2
             # assert ((pool2.to("cpu") - p2.to(dtype=weight_dtype)).abs().max() > 1e-2).sum() <= b_size * 2
-            # logger.info("text encoder outputs verified")
+            # print("text encoder outputs verified")
 
         return encoder_hidden_states1, encoder_hidden_states2, pool2
 

@@ -57,10 +57,10 @@ def merge_to_sd_model(text_encoder, unet, models, ratios, merge_dtype):
             name_to_module[lora_name] = child_module
 
   for model, ratio in zip(models, ratios):
-    logger.info(f"loading: {model}")
+    print(f"loading: {model}")
     lora_sd = load_state_dict(model, merge_dtype)
 
-    logger.info(f"merging...")
+    print(f"merging...")
     for key in lora_sd.keys():
       if "lora_down" in key:
         up_key = key.replace("lora_down", "lora_up")
@@ -69,10 +69,10 @@ def merge_to_sd_model(text_encoder, unet, models, ratios, merge_dtype):
         # find original module for this lora
         module_name = '.'.join(key.split('.')[:-2])               # remove trailing ".lora_down.weight"
         if module_name not in name_to_module:
-          logger.info(f"no module found for LoRA weight: {key}")
+          print(f"no module found for LoRA weight: {key}")
           continue
         module = name_to_module[module_name]
-        # logger.info(f"apply {key} to {module}")
+        # print(f"apply {key} to {module}")
 
         down_weight = lora_sd[key]
         up_weight = lora_sd[up_key]
@@ -99,10 +99,10 @@ def merge_lora_models(models, ratios, merge_dtype):
   alpha = None
   dim = None
   for model, ratio in zip(models, ratios):
-    logger.info(f"loading: {model}")
+    print(f"loading: {model}")
     lora_sd = load_state_dict(model, merge_dtype)
 
-    logger.info(f"merging...")
+    print(f"merging...")
     for key in lora_sd.keys():
       if 'alpha' in key:
         if key in merged_sd:
@@ -120,7 +120,7 @@ def merge_lora_models(models, ratios, merge_dtype):
             dim = lora_sd[key].size()[0]
           merged_sd[key] = lora_sd[key] * ratio
 
-  logger.info(f"dim (rank): {dim}, alpha: {alpha}")
+  print(f"dim (rank): {dim}, alpha: {alpha}")
   if alpha is None:
     alpha = dim
 
@@ -145,21 +145,21 @@ def merge(args):
     save_dtype = merge_dtype
 
   if args.sd_model is not None:
-    logger.info(f"loading SD model: {args.sd_model}")
+    print(f"loading SD model: {args.sd_model}")
 
     text_encoder, vae, unet = model_util.load_models_from_stable_diffusion_checkpoint(args.v2, args.sd_model)
 
     merge_to_sd_model(text_encoder, unet, args.models, args.ratios, merge_dtype)
 
-    logger.info("")
-    logger.info(f"saving SD model to: {args.save_to}")
+    print("")
+    print(f"saving SD model to: {args.save_to}")
     model_util.save_stable_diffusion_checkpoint(args.v2, args.save_to, text_encoder, unet,
                                                 args.sd_model, 0, 0, save_dtype, vae)
   else:
     state_dict, _, _ = merge_lora_models(args.models, args.ratios, merge_dtype)
 
-    logger.info(f"")
-    logger.info(f"saving model to: {args.save_to}")
+    print(f"")
+    print(f"saving model to: {args.save_to}")
     save_to_file(args.save_to, state_dict, state_dict, save_dtype)
 
 

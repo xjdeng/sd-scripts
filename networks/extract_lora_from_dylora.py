@@ -43,13 +43,13 @@ def split_lora_model(lora_sd, unit):
             rank = value.size()[0]
             if rank > max_rank:
                 max_rank = rank
-    logger.info(f"Max rank: {max_rank}")
+    print(f"Max rank: {max_rank}")
 
     rank = unit
     split_models = []
     new_alpha = None
     while rank < max_rank:
-        logger.info(f"Splitting rank {rank}")
+        print(f"Splitting rank {rank}")
         new_sd = {}
         for key, value in lora_sd.items():
             if "lora_down" in key:
@@ -60,7 +60,7 @@ def split_lora_model(lora_sd, unit):
                 # なぜかscaleするとおかしくなる……
                 # this_rank = lora_sd[key.replace("alpha", "lora_down.weight")].size()[0]
                 # scale = math.sqrt(this_rank / rank)  # rank is > unit
-                # logger.info(key, value.size(), this_rank, rank, value, scale)
+                # print(key, value.size(), this_rank, rank, value, scale)
                 # new_alpha = value * scale  # always same
                 # new_sd[key] = new_alpha
                 new_sd[key] = value
@@ -72,10 +72,10 @@ def split_lora_model(lora_sd, unit):
 
 
 def split(args):
-    logger.info("loading Model...")
+    print("loading Model...")
     lora_sd, metadata = load_state_dict(args.model)
 
-    logger.info("Splitting Model...")
+    print("Splitting Model...")
     original_rank, split_models = split_lora_model(lora_sd, args.unit)
 
     comment = metadata.get("ss_training_comment", "")
@@ -97,7 +97,7 @@ def split(args):
         filename, ext = os.path.splitext(args.save_to)
         model_file_name = filename + f"-{new_rank:04d}{ext}"
 
-        logger.info(f"saving model to: {model_file_name}")
+        print(f"saving model to: {model_file_name}")
         save_to_file(model_file_name, state_dict, new_metadata)
 
 

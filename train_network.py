@@ -158,18 +158,18 @@ class NetworkTrainer:
         if args.dataset_class is None:
             blueprint_generator = BlueprintGenerator(ConfigSanitizer(True, True, args.masked_loss, True))
             if use_user_config:
-                logger.info(f"Loading dataset config from {args.dataset_config}")
+                print(f"Loading dataset config from {args.dataset_config}")
                 user_config = config_util.load_user_config(args.dataset_config)
                 ignored = ["train_data_dir", "reg_data_dir", "in_json"]
                 if any(getattr(args, attr) is not None for attr in ignored):
-                    logger.warning(
+                    print(
                         "ignoring the following options because config file is found: {0} / 設定ファイルが利用されるため以下のオプションは無視されます: {0}".format(
                             ", ".join(ignored)
                         )
                     )
             else:
                 if use_dreambooth_method:
-                    logger.info("Using DreamBooth method.")
+                    print("Using DreamBooth method.")
                     user_config = {
                         "datasets": [
                             {
@@ -180,7 +180,7 @@ class NetworkTrainer:
                         ]
                     }
                 else:
-                    logger.info("Training with captions.")
+                    print("Training with captions.")
                     user_config = {
                         "datasets": [
                             {
@@ -209,7 +209,7 @@ class NetworkTrainer:
             train_util.debug_dataset(train_dataset_group)
             return
         if len(train_dataset_group) == 0:
-            logger.error(
+            print(
                 "No data found. Please verify arguments (train_data_dir must be the parent of folders with images) / 画像がありません。引数指定を確認してください（train_data_dirには画像があるフォルダではなく、画像があるフォルダの親フォルダを指定する必要があります）"
             )
             return
@@ -222,7 +222,7 @@ class NetworkTrainer:
         self.assert_extra_args(args, train_dataset_group)
 
         # acceleratorを準備する
-        logger.info("preparing accelerator")
+        print("preparing accelerator")
         accelerator = train_util.prepare_accelerator(args)
         is_main_process = accelerator.is_main_process
 
@@ -313,7 +313,7 @@ class NetworkTrainer:
         if hasattr(network, "prepare_network"):
             network.prepare_network(args)
         if args.scale_weight_norms and not hasattr(network, "apply_max_norm_regularization"):
-            logger.warning(
+            print(
                 "warning: scale_weight_norms is specified but the network does not support it / scale_weight_normsが指定されていますが、ネットワークが対応していません"
             )
             args.scale_weight_norms = False
@@ -996,7 +996,7 @@ class NetworkTrainer:
             ckpt_name = train_util.get_last_ckpt_name(args, "." + args.save_model_as)
             save_model(ckpt_name, network, global_step, num_train_epochs, force_sync_upload=True)
 
-            logger.info("model saved.")
+            print("model saved.")
 
 
 def setup_parser() -> argparse.ArgumentParser:

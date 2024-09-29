@@ -74,7 +74,7 @@ def prepare_deepspeed_plugin(args: argparse.Namespace):
     try:
         import deepspeed
     except ImportError as e:
-        logger.error(
+        print(
             "deepspeed is not installed. please install deepspeed in your environment with following command. DS_BUILD_OPS=0 pip install deepspeed"
         )
         exit(1)
@@ -100,16 +100,16 @@ def prepare_deepspeed_plugin(args: argparse.Namespace):
     if args.full_fp16 or args.fp16_master_weights_and_gradients:
         if args.offload_optimizer_device == "cpu" and args.zero_stage == 2:
             deepspeed_plugin.deepspeed_config["fp16"]["fp16_master_weights_and_grads"] = True
-            logger.info("[DeepSpeed] full fp16 enable.")
+            print("[DeepSpeed] full fp16 enable.")
         else:
-            logger.info(
+            print(
                 "[DeepSpeed]full fp16, fp16_master_weights_and_grads currently only supported using ZeRO-Offload with DeepSpeedCPUAdam on ZeRO-2 stage."
             )
 
     if args.offload_optimizer_device is not None:
-        logger.info("[DeepSpeed] start to manually build cpu_adam.")
+        print("[DeepSpeed] start to manually build cpu_adam.")
         deepspeed.ops.op_builder.CPUAdamBuilder().load()
-        logger.info("[DeepSpeed] building cpu_adam done.")
+        print("[DeepSpeed] building cpu_adam done.")
 
     return deepspeed_plugin
 

@@ -177,7 +177,7 @@ def get_prompts_with_weights(pipe: StableDiffusionPipeline, prompt: List[str], m
         tokens.append(text_token)
         weights.append(text_weight)
     if truncated:
-        logger.warning("Prompt was truncated. Try to shorten the prompt or increase max_embeddings_multiples")
+        print("Prompt was truncated. Try to shorten the prompt or increase max_embeddings_multiples")
     return tokens, weights
 
 
@@ -625,7 +625,7 @@ class StableDiffusionLongPromptWeightingPipeline(StableDiffusionPipeline):
             raise ValueError(f"The value of strength should in [0.0, 1.0] but is {strength}")
 
         if height % 8 != 0 or width % 8 != 0:
-            logger.info(f'{height} {width}')
+            print(f'{height} {width}')
             raise ValueError(f"`height` and `width` have to be divisible by 8 but are {height} and {width}.")
 
         if (callback_steps is None) or (

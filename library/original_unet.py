@@ -1384,7 +1384,7 @@ class UNet2DConditionModel(nn.Module):
     ):
         super().__init__()
         assert sample_size is not None, "sample_size must be specified"
-        logger.info(
+        print(
             f"UNet2DConditionModel: {sample_size}, {attention_head_dim}, {cross_attention_dim}, {use_linear_projection}, {upcast_attention}"
         )
 
@@ -1518,7 +1518,7 @@ class UNet2DConditionModel(nn.Module):
     def set_gradient_checkpointing(self, value=False):
         modules = self.down_blocks + [self.mid_block] + self.up_blocks
         for module in modules:
-            logger.info(f"{module.__class__.__name__} {module.gradient_checkpointing} -> {value}")
+            print(f"{module.__class__.__name__} {module.gradient_checkpointing} -> {value}")
             module.gradient_checkpointing = value
 
     # endregion
@@ -1560,7 +1560,7 @@ class UNet2DConditionModel(nn.Module):
         upsample_size = None
 
         if any(s % default_overall_up_factor != 0 for s in sample.shape[-2:]):
-            # logger.info("Forward upsample size to force interpolation output size.")
+            # print("Forward upsample size to force interpolation output size.")
             forward_upsample_size = True
 
         # 1. time
@@ -1713,14 +1713,14 @@ class InferUNet2DConditionModel:
 
     def set_deep_shrink(self, ds_depth_1, ds_timesteps_1=650, ds_depth_2=None, ds_timesteps_2=None, ds_ratio=0.5):
         if ds_depth_1 is None:
-            logger.info("Deep Shrink is disabled.")
+            print("Deep Shrink is disabled.")
             self.ds_depth_1 = None
             self.ds_timesteps_1 = None
             self.ds_depth_2 = None
             self.ds_timesteps_2 = None
             self.ds_ratio = None
         else:
-            logger.info(
+            print(
                 f"Deep Shrink is enabled: [depth={ds_depth_1}/{ds_depth_2}, timesteps={ds_timesteps_1}/{ds_timesteps_2}, ratio={ds_ratio}]"
             )
             self.ds_depth_1 = ds_depth_1
@@ -1820,7 +1820,7 @@ class InferUNet2DConditionModel:
         upsample_size = None
 
         if any(s % default_overall_up_factor != 0 for s in sample.shape[-2:]):
-            # logger.info("Forward upsample size to force interpolation output size.")
+            # print("Forward upsample size to force interpolation output size.")
             forward_upsample_size = True
 
         # 1. time

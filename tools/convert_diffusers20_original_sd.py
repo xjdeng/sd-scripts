@@ -33,7 +33,7 @@ def convert(args):
 
     # モデルを読み込む
     msg = "checkpoint" if is_load_ckpt else ("Diffusers" + (" as fp16" if args.fp16 else ""))
-    logger.info(f"loading {msg}: {args.model_to_load}")
+    print(f"loading {msg}: {args.model_to_load}")
 
     if is_load_ckpt:
         v2_model = args.v2
@@ -51,13 +51,13 @@ def convert(args):
         if args.v1 == args.v2:
             # 自動判定する
             v2_model = unet.config.cross_attention_dim == 1024
-            logger.info("checking model version: model is " + ("v2" if v2_model else "v1"))
+            print("checking model version: model is " + ("v2" if v2_model else "v1"))
         else:
             v2_model = not args.v1
 
     # 変換して保存する
     msg = ("checkpoint" + ("" if save_dtype is None else f" in {save_dtype}")) if is_save_ckpt else "Diffusers"
-    logger.info(f"converting and saving as {msg}: {args.model_to_save}")
+    print(f"converting and saving as {msg}: {args.model_to_save}")
 
     if is_save_ckpt:
         original_model = args.model_to_load if is_load_ckpt else None
@@ -73,15 +73,15 @@ def convert(args):
             save_dtype=save_dtype,
             vae=vae,
         )
-        logger.info(f"model saved. total converted state_dict keys: {key_count}")
+        print(f"model saved. total converted state_dict keys: {key_count}")
     else:
-        logger.info(
+        print(
             f"copy scheduler/tokenizer config from: {args.reference_model if args.reference_model is not None else 'default model'}"
         )
         model_util.save_diffusers_checkpoint(
             v2_model, args.model_to_save, text_encoder, unet, args.reference_model, vae, args.use_safetensors
         )
-        logger.info("model saved.")
+        print("model saved.")
 
 
 def setup_parser() -> argparse.ArgumentParser:

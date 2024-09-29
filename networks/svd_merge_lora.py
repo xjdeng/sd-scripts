@@ -256,7 +256,7 @@ def format_lbws(lbws):
 
 
 def merge_lora_models(models, ratios, lbws, new_rank, new_conv_rank, device, merge_dtype):
-    logger.info(f"new rank: {new_rank}, new conv rank: {new_conv_rank}")
+    print(f"new rank: {new_rank}, new conv rank: {new_conv_rank}")
     merged_sd = {}
     v2 = None  # This is meaning LoRA Metadata v2, Not meaning SD2
     base_model = None
@@ -268,7 +268,7 @@ def merge_lora_models(models, ratios, lbws, new_rank, new_conv_rank, device, mer
         LBW_TARGET_IDX = []
 
     for model, ratio, lbw in itertools.zip_longest(models, ratios, lbws):
-        logger.info(f"loading: {model}")
+        print(f"loading: {model}")
         lora_sd, lora_metadata = load_state_dict(model, merge_dtype)
 
         if lora_metadata is not None:
@@ -281,10 +281,10 @@ def merge_lora_models(models, ratios, lbws, new_rank, new_conv_rank, device, mer
             lbw_weights = [1] * 26
             for index, value in zip(LBW_TARGET_IDX, lbw):
                 lbw_weights[index] = value
-            logger.info(f"lbw: {dict(zip(LAYER26.keys(), lbw_weights))}")
+            print(f"lbw: {dict(zip(LAYER26.keys(), lbw_weights))}")
 
         # merge
-        logger.info(f"merging...")
+        print(f"merging...")
         for key in tqdm(list(lora_sd.keys())):
             if "lora_down" not in key:
                 continue
@@ -301,7 +301,7 @@ def merge_lora_models(models, ratios, lbws, new_rank, new_conv_rank, device, mer
             out_dim = up_weight.size()[0]
             conv2d = len(down_weight.size()) == 4
             kernel_size = None if not conv2d else down_weight.size()[2:4]
-            # logger.info(lora_module_name, network_dim, alpha, in_dim, out_dim, kernel_size)
+            # print(lora_module_name, network_dim, alpha, in_dim, out_dim, kernel_size)
 
             # make original weight if not exist
             if lora_module_name not in merged_sd:
@@ -344,7 +344,7 @@ def merge_lora_models(models, ratios, lbws, new_rank, new_conv_rank, device, mer
             merged_sd[lora_module_name] = weight
 
     # extract from merged weights
-    logger.info("extract new lora...")
+    print("extract new lora...")
     merged_lora_sd = {}
     with torch.no_grad():
         for lora_module_name, mat in tqdm(list(merged_sd.items())):
@@ -430,7 +430,7 @@ def merge(args):
         args.models, args.ratios, args.lbws, args.new_rank, new_conv_rank, args.device, merge_dtype
     )
 
-    logger.info(f"calculating hashes and creating metadata...")
+    print(f"calculating hashes and creating metadata...")
 
     model_hash, legacy_hash = train_util.precalculate_safetensors_hashes(state_dict, metadata)
     metadata["sshs_model_hash"] = model_hash
@@ -445,12 +445,12 @@ def merge(args):
         )
         if v2:
             # TODO read sai modelspec
-            logger.warning(
+            print(
                 "Cannot determine if LoRA is for v-prediction, so save metadata as v-prediction / LoRAがv-prediction用か否か不明なため、仮にv-prediction用としてmetadataを保存します"
             )
         metadata.update(sai_metadata)
 
-    logger.info(f"saving model to: {args.save_to}")
+    print(f"saving model to: {args.save_to}")
     save_to_file(args.save_to, state_dict, save_dtype, metadata)
 
 

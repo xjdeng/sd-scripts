@@ -948,7 +948,7 @@ def convert_vae_state_dict(vae_state_dict):
     for k, v in new_state_dict.items():
         for weight_name in weights_to_convert:
             if f"mid.attn_1.{weight_name}.weight" in k:
-                # logger.info(f"Reshaping {k} for SD format: shape {v.shape} -> {v.shape} x 1 x 1")
+                # print(f"Reshaping {k} for SD format: shape {v.shape} -> {v.shape} x 1 x 1")
                 new_state_dict[k] = reshape_weight_for_sd(v)
 
     return new_state_dict
@@ -1006,7 +1006,7 @@ def load_models_from_stable_diffusion_checkpoint(v2, ckpt_path, device="cpu", dt
 
     unet = UNet2DConditionModel(**unet_config).to(device)
     info = unet.load_state_dict(converted_unet_checkpoint)
-    logger.info(f"loading u-net: {info}")
+    print(f"loading u-net: {info}")
 
     # Convert the VAE model.
     vae_config = create_vae_diffusers_config()
@@ -1014,7 +1014,7 @@ def load_models_from_stable_diffusion_checkpoint(v2, ckpt_path, device="cpu", dt
 
     vae = AutoencoderKL(**vae_config).to(device)
     info = vae.load_state_dict(converted_vae_checkpoint)
-    logger.info(f"loading vae: {info}")
+    print(f"loading vae: {info}")
 
     # convert text_model
     if v2:
@@ -1048,7 +1048,7 @@ def load_models_from_stable_diffusion_checkpoint(v2, ckpt_path, device="cpu", dt
         # logging.set_verbosity_error()  # don't show annoying warning
         # text_model = CLIPTextModel.from_pretrained("openai/clip-vit-large-patch14").to(device)
         # logging.set_verbosity_warning()
-        # logger.info(f"config: {text_model.config}")
+        # print(f"config: {text_model.config}")
         cfg = CLIPTextConfig(
             vocab_size=49408,
             hidden_size=768,
@@ -1071,7 +1071,7 @@ def load_models_from_stable_diffusion_checkpoint(v2, ckpt_path, device="cpu", dt
         )
         text_model = CLIPTextModel._from_config(cfg)
         info = text_model.load_state_dict(converted_text_encoder_checkpoint)
-    logger.info(f"loading text encoder: {info}")
+    print(f"loading text encoder: {info}")
 
     return text_model, vae, unet
 
@@ -1146,7 +1146,7 @@ def convert_text_encoder_state_dict_to_sd_v2(checkpoint, make_dummy_weights=Fals
 
     # 最後の層などを捏造するか
     if make_dummy_weights:
-        logger.info("make dummy weights for resblock.23, text_projection and logit scale.")
+        print("make dummy weights for resblock.23, text_projection and logit scale.")
         keys = list(new_sd.keys())
         for key in keys:
             if key.startswith("transformer.resblocks.22."):
@@ -1265,14 +1265,14 @@ VAE_PREFIX = "first_stage_model."
 
 
 def load_vae(vae_id, dtype):
-    logger.info(f"load VAE: {vae_id}")
+    print(f"load VAE: {vae_id}")
     if os.path.isdir(vae_id) or not os.path.isfile(vae_id):
         # Diffusers local/remote
         try:
             vae = AutoencoderKL.from_pretrained(vae_id, subfolder=None, torch_dtype=dtype)
         except EnvironmentError as e:
-            logger.error(f"exception occurs in loading vae: {e}")
-            logger.error("retry with subfolder='vae'")
+            print(f"exception occurs in loading vae: {e}")
+            print("retry with subfolder='vae'")
             vae = AutoencoderKL.from_pretrained(vae_id, subfolder="vae", torch_dtype=dtype)
         return vae
 
@@ -1344,13 +1344,13 @@ def make_bucket_resolutions(max_reso, min_size=256, max_size=1024, divisible=64)
 
 if __name__ == "__main__":
     resos = make_bucket_resolutions((512, 768))
-    logger.info(f"{len(resos)}")
-    logger.info(f"{resos}")
+    print(f"{len(resos)}")
+    print(f"{resos}")
     aspect_ratios = [w / h for w, h in resos]
-    logger.info(f"{aspect_ratios}")
+    print(f"{aspect_ratios}")
 
     ars = set()
     for ar in aspect_ratios:
         if ar in ars:
-            logger.error(f"error! duplicate ar: {ar}")
+            print(f"error! duplicate ar: {ar}")
         ars.add(ar)

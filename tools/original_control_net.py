@@ -54,7 +54,7 @@ def load_control_net(v2, unet, model):
 
     # control sdからキー変換しつつU-Netに対応する部分のみ取り出し、DiffusersのU-Netに読み込む
     # state dictを読み込む
-    logger.info(f"ControlNet: loading control SD model : {model}")
+    print(f"ControlNet: loading control SD model : {model}")
 
     if model_util.is_safetensors(model):
         ctrl_sd_sd = load_file(model)
@@ -64,7 +64,7 @@ def load_control_net(v2, unet, model):
 
     # 重みをU-Netに読み込めるようにする。ControlNetはSD版のstate dictなので、それを読み込む
     is_difference = "difference" in ctrl_sd_sd
-    logger.info(f"ControlNet: loading difference: {is_difference}")
+    print(f"ControlNet: loading difference: {is_difference}")
 
     # ControlNetには存在しないキーがあるので、まず現在のU-NetでSD版の全keyを作っておく
     # またTransfer Controlの元weightとなる
@@ -92,13 +92,13 @@ def load_control_net(v2, unet, model):
     # ControlNetのU-Netを作成する
     ctrl_unet = UNet2DConditionModel(**unet_config)
     info = ctrl_unet.load_state_dict(ctrl_unet_du_sd)
-    logger.info(f"ControlNet: loading Control U-Net: {info}")
+    print(f"ControlNet: loading Control U-Net: {info}")
 
     # U-Net以外のControlNetを作成する
     # TODO support middle only
     ctrl_net = ControlNet()
     info = ctrl_net.load_state_dict(zero_conv_sd)
-    logger.info("ControlNet: loading ControlNet: {info}")
+    print("ControlNet: loading ControlNet: {info}")
 
     ctrl_unet.to(unet.device, dtype=unet.dtype)
     ctrl_net.to(unet.device, dtype=unet.dtype)
@@ -120,7 +120,7 @@ def load_preprocess(prep_type: str):
 
         return canny
 
-    logger.info(f"Unsupported prep type: {prep_type}")
+    print(f"Unsupported prep type: {prep_type}")
     return None
 
 
@@ -177,7 +177,7 @@ def call_unet_and_control_net(
     cnet_idx = step % cnet_cnt
     cnet_info = control_nets[cnet_idx]
 
-    # logger.info(current_ratio, cnet_info.prep, cnet_info.weight, cnet_info.ratio)
+    # print(current_ratio, cnet_info.prep, cnet_info.weight, cnet_info.ratio)
     if cnet_info.ratio < current_ratio:
         return original_unet(sample, timestep, encoder_hidden_states)
 
@@ -208,7 +208,7 @@ def call_unet_and_control_net(
   # ControlNet
   cnet_outs_list = []
   for i, cnet_info in enumerate(control_nets):
-    # logger.info(current_ratio, cnet_info.prep, cnet_info.weight, cnet_info.ratio)
+    # print(current_ratio, cnet_info.prep, cnet_info.weight, cnet_info.ratio)
     if cnet_info.ratio < current_ratio:
       continue
     guided_hint = guided_hints[i]
@@ -248,7 +248,7 @@ def unet_forward(
     upsample_size = None
 
     if any(s % default_overall_up_factor != 0 for s in sample.shape[-2:]):
-        logger.info("Forward upsample size to force interpolation output size.")
+        print("Forward upsample size to force interpolation output size.")
         forward_upsample_size = True
 
     # 1. time
