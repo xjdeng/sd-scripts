@@ -23,7 +23,7 @@ torchvision==0.19
 xformers
 triton
 wandb==0.15
-dadaption=3.0
+dadaption==3.0
 # for Image utils
 imagesize==1.4.1
 # for BLIP captioning
