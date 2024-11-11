@@ -26,6 +26,7 @@ wandb==0.15
 dadaptation==3.0
 # for Image utils
 imagesize==1.4.1
+lycoris-lora
 # for BLIP captioning
 # requests==2.28.2
 # timm==0.6.12
